@@ -20,16 +20,11 @@ function UserList() {
     finally { setLoading(false); }
   };
 
-  const handleDelete = async (id, email, role) => {
+const handleDelete = async (id, email, role) => {
     if (window.confirm(`Supprimer ${email} ?`)) {
       try {
-        // Pour les chauffeurs: utiliser l'endpoint /chauffeurs/{id}
-        if (role === 'CHAUFFEUR') {
-          await deleteChauffeur(id);
-        } else {
-          // Pour les autres rôles: utiliser l'endpoint /utilisateurs/{id}
-          await deleteUtilisateur(id);
-        }
+        // Utiliser deleteUtilisateur pour tous les rôles - le backend gère la suppression
+        await deleteUtilisateur(id);
         setUsers(users.filter(u => u.id !== id));
       } catch (err) {
         console.error('Erreur suppression:', err);
@@ -73,11 +68,20 @@ function UserList() {
           <option value="OPERATEUR_MAINTENANCE">Opérateur</option>
         </select>
       </div>
-      <table className="data-table">
-        <thead><tr><th>ID</th><th>Nom</th><th>Prénom</th><th>Email</th><th>Rôle</th><th>Statut</th><th>Parc</th><th>Actions</th></tr></thead>
+<table className="data-table">
+        <thead><tr><th>Photo</th><th>ID</th><th>Nom</th><th>Prénom</th><th>Email</th><th>Rôle</th><th>Statut</th><th>Parc</th><th>Actions</th></tr></thead>
         <tbody>
           {filteredUsers.map(u => (
-            <tr key={u.id}>
+<tr key={u.id}>
+              <td>
+                {u.photo ? (
+                  <img src={u.photo} alt={u.nom} className="user-photo-mini" />
+                ) : (
+                  <div className="user-photo-placeholder">
+                    {(u.nom?.[0] || '').toUpperCase()}{(u.prenom?.[0] || '').toUpperCase()}
+                  </div>
+                )}
+              </td>
               <td>{u.id}</td><td>{u.nom || '-'}</td><td>{u.prenom || '-'}</td><td>{u.email}</td>
               <td><span className={`role-badge ${getRoleBadge(u.role)}`}>{getRoleLabel(u.role)}</span></td>
               <td><span className={`status-badge ${u.actif ? 'active' : 'inactive'}`}>{u.actif ? 'Actif' : 'Inactif'}</span></td>

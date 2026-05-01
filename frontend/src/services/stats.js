@@ -17,11 +17,11 @@ export const getChefDashboardStats = async (parcId) => {
     const allMissions = missionsResponse.data;
     const parcMissions = parcId ? allMissions.filter(m => m.parcId === parcId) : allMissions;
 
-    // Statistiques chauffeurs
+// Statistiques chauffeurs
     const chauffeurs = parcUsers.filter(u => u.role === 'CHAUFFEUR');
     const chauffeursDisponibles = chauffeurs.filter(c => c.disponible === 'disponible').length;
-    const chauffeursOccupees = chauffeurs.filter(c => c.disponible === 'occupe').length;
-    const chauffeursConges = chauffeurs.filter(c => c.disponible === 'congé').length;
+    const chauffeursOccupees = chauffeurs.filter(c => c.disponible === 'en_mission').length;
+    const chauffeursConges = chauffeurs.filter(c => c.disponible === 'conge').length;
 
     // Statistiques véhicules
     const vehiculesDisponibles = parcVehicules.filter(v => v.statut === 'DISPONIBLE').length;

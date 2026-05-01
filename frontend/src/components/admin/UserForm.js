@@ -76,12 +76,23 @@ function UserForm() {
     }
   }, [id, isEditMode]);
 
-  const handleChange = (e) => {
+const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setUser(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value,
     }));
+  };
+
+  const handlePhotoChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setUser(prev => ({ ...prev, photo: reader.result }));
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -128,7 +139,14 @@ function UserForm() {
       {success && <div className="alert alert-success">{success}</div>}
 
       <form onSubmit={handleSubmit} className="user-form">
-        {/* Champs communs */}
+{/* Champs communs */}
+        <div className="form-row photo-row">
+          <div className="form-group">
+            <label>Photo de profil</label>
+            <input type="file" accept="image/*" onChange={handlePhotoChange} className="photo-input" />
+            {user.photo && <img src={user.photo} alt="Aperçu" className="photo-preview" />}
+          </div>
+        </div>
         <div className="form-row">
           <div className="form-group"><label>Nom *</label><input type="text" name="nom" value={user.nom} onChange={handleChange} required /></div>
           <div className="form-group"><label>Prénom *</label><input type="text" name="prenom" value={user.prenom} onChange={handleChange} required /></div>
@@ -156,8 +174,11 @@ function UserForm() {
               <div className="form-group"><label>Date expiration permis</label><input type="date" name="dateExpirationPermis" value={user.dateExpirationPermis} onChange={handleChange} /></div>
             </div>
             <div className="form-row">
-              <div className="form-group"><label>Disponibilité</label><select name="disponible" value={user.disponible} onChange={handleChange}>
-                <option value="disponible">Disponible</option><option value="occupe">Occupé</option><option value="congé">En congé</option>
+<div className="form-group"><label>Disponibilité</label><select name="disponible" value={user.disponible} onChange={handleChange}>
+                <option value="disponible">Disponible</option>
+                <option value="en_mission">En mission</option>
+                <option value="conge">En congé</option>
+                <option value="malade">Malade</option>
               </select></div>
               <div className="form-group"><label>Parc</label><select name="id_parc" value={user.id_parc} onChange={handleChange}>
                 <option value="">-- Sélectionner --</option>

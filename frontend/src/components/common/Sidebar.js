@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
@@ -12,7 +12,6 @@ const Sidebar = () => {
     navigate('/login');
   };
 
-  // Menu selon le rôle
   const getMenuItems = () => {
     if (user?.role === 'ADMIN') {
       return [
@@ -27,6 +26,7 @@ const Sidebar = () => {
         { path: '/chef/missions', label: 'Missions', icon: '📋' },
         { path: '/chef/conges', label: 'Congés', icon: '📅' },
         { path: '/chef/maintenances', label: 'Maintenances', icon: '🔧' },
+        { path: '/chef/rapports-maintenance', label: '📄 Rapports Maintenance', icon: '📄' },
         { path: '/chef/profil', label: 'Mon profil', icon: '👤' },
       ];
     } else if (user?.role === 'OPERATEUR_MAINTENANCE') {
@@ -46,9 +46,6 @@ const Sidebar = () => {
     return [];
   };
 
-  const menuItems = getMenuItems();
-
-  // Libellé du rôle affiché en bas
   const getRoleLabel = () => {
     if (user?.role === 'ADMIN') return 'Administrateur';
     if (user?.role === 'CHEF') return 'Chef de parc';
@@ -56,6 +53,8 @@ const Sidebar = () => {
     if (user?.role === 'CHAUFFEUR') return 'Chauffeur';
     return 'Utilisateur';
   };
+
+  const menuItems = getMenuItems();
 
   return (
     <div className="sidebar">
@@ -93,3 +92,4 @@ const Sidebar = () => {
 };
 
 export default Sidebar;
+

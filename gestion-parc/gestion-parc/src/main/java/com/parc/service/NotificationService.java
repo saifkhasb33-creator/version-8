@@ -237,7 +237,7 @@ public class NotificationService {
 
     // Récupération des notifications
     public List<NotificationDTO> getMesNotifications(Long utilisateurId) {
-        return notificationRepository.findByDestinataireIdOrderByDateEnvoiDesc(utilisateurId)
+        return notificationRepository.findByDestinataireIdWithRelations(utilisateurId)
                 .stream().map(this::toDTO).collect(Collectors.toList());
     }
 

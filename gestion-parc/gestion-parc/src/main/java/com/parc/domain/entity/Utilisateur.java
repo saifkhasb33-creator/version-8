@@ -25,7 +25,9 @@ public class Utilisateur {
     @Enumerated(EnumType.STRING)
     private Role role;
 
+@Column(columnDefinition = "TEXT")
     private String photo;
+    
     private boolean actif;
     private LocalDateTime derniereConnexion;
 
@@ -34,7 +36,6 @@ public class Utilisateur {
     public void postLoad() {
         // Ensure role is never null
         if (this.role == null) {
-            // Default to CHAUFFEUR if role is null (shouldn't happen)
             this.role = Role.CHAUFFEUR;
         }
     }

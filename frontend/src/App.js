@@ -9,6 +9,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import ChefDashboard from './pages/ChefDashboard';
 import OperateurMaintenanceDashboard from './pages/OperateurMaintenanceDashboard';
 import ChauffeurDashboardPage from './pages/ChauffeurDashboard';
+import LandingPage from './pages/LandingPage'; // ✅ import ajouté
 
 // Styles
 import './styles/global.css';
@@ -30,57 +31,57 @@ function App() {
         <BrowserRouter>
           <NotificationContainer />
           <Routes>
-          {/* Page de connexion */}
-          <Route path="/login" element={<Login />} />
-          
-          {/* Espace Administrateur */}
-          <Route
-            path="/admin/*"
-            element={
-              <PrivateRoute>
-                <AdminDashboard />
-              </PrivateRoute>
-            }
-          />
-          
-          {/* Espace Chef de parc */}
-          <Route
-            path="/chef/*"
-            element={
-              <PrivateRoute>
-                <ChefDashboard />
-              </PrivateRoute>
-            }
-          />
+            {/* ✅ Landing page à la racine */}
+            <Route path="/" element={<LandingPage />} />
 
-          {/* Espace Opérateur Maintenance */}
-          <Route
-            path="/operateur-maintenance/*"
-            element={
-              <PrivateRoute>
-                <OperateurMaintenanceDashboard />
-              </PrivateRoute>
-            }
-          />
+            {/* Page de connexion */}
+            <Route path="/login" element={<Login />} />
+            
+            {/* Espace Administrateur */}
+            <Route
+              path="/admin/*"
+              element={
+                <PrivateRoute>
+                  <AdminDashboard />
+                </PrivateRoute>
+              }
+            />
+            
+            {/* Espace Chef de parc */}
+            <Route
+              path="/chef/*"
+              element={
+                <PrivateRoute>
+                  <ChefDashboard />
+                </PrivateRoute>
+              }
+            />
 
-          {/* Espace Chauffeur */}
-          <Route
-            path="/chauffeur/*"
-            element={
-              <PrivateRoute>
-                <ChauffeurDashboardPage />
-              </PrivateRoute>
-            }
-          />
-          
-          {/* Redirection par défaut */}
-          <Route path="/" element={<Navigate to="/login" />} />
-          
-          {/* Redirection pour les routes non trouvées */}
-          <Route path="*" element={<Navigate to="/login" />} />
-        </Routes>
-      </BrowserRouter>
-    </AuthProvider>
+            {/* Espace Opérateur Maintenance */}
+            <Route
+              path="/operateur-maintenance/*"
+              element={
+                <PrivateRoute>
+                  <OperateurMaintenanceDashboard />
+                </PrivateRoute>
+              }
+            />
+
+            {/* Espace Chauffeur */}
+            <Route
+              path="/chauffeur/*"
+              element={
+                <PrivateRoute>
+                  <ChauffeurDashboardPage />
+                </PrivateRoute>
+              }
+            />
+            
+            {/* Redirection pour les routes non trouvées */}
+            <Route path="*" element={<Navigate to="/" />} />
+          </Routes>
+        </BrowserRouter>
+      </AuthProvider>
     </NotificationProvider>
   );
 }

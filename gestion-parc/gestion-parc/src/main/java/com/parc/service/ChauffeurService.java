@@ -4,6 +4,7 @@ import com.parc.dto.ChauffeurDTO;
 import com.parc.domain.entity.Chauffeur;
 import com.parc.domain.entity.Parc;
 import com.parc.repository.ChauffeurRepository;
+import com.parc.repository.NotificationRepository;
 import com.parc.repository.ParcRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,10 +18,12 @@ public class ChauffeurService {
 
     private final ChauffeurRepository chauffeurRepository;
     private final ParcRepository parcRepository;
+    private final NotificationRepository notificationRepository;
 
-    public ChauffeurService(ChauffeurRepository chauffeurRepository, ParcRepository parcRepository) {
+    public ChauffeurService(ChauffeurRepository chauffeurRepository, ParcRepository parcRepository, NotificationRepository notificationRepository) {
         this.chauffeurRepository = chauffeurRepository;
         this.parcRepository = parcRepository;
+        this.notificationRepository = notificationRepository;
     }
 
     // ===== Conversions =====
@@ -110,7 +113,10 @@ public class ChauffeurService {
         return toDTO(chauffeurRepository.save(existing));
     }
 
-    public void deleteChauffeur(Long id) {
+public void deleteChauffeur(Long id) {
+        // Delete notifications for this utilisateur first
+        notificationRepository.deleteByDestinataireId(id);
+        
         Chauffeur existing = chauffeurRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Chauffeur non trouvé"));
         chauffeurRepository.delete(existing);

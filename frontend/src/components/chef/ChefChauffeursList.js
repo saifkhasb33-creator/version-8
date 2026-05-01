@@ -19,7 +19,7 @@ function ChefChauffeursList({ user }) {
   };
 
   const getDisponibleLabel = (d) => {
-    const labels = { 'disponible': { text: 'Disponible', class: 'active' }, 'occupe': { text: 'En mission', class: 'warning' }, 'congé': { text: 'En congé', class: 'inactive' } };
+const labels = { 'disponible': { text: 'Disponible', class: 'active' }, 'en_mission': { text: 'En mission', class: 'warning' }, 'conge': { text: 'En congé', class: 'inactive' }, 'malade': { text: 'Malade', class: 'inactive' } };
     return labels[d] || { text: 'Inconnu', class: 'inactive' };
   };
 
@@ -36,7 +36,7 @@ function ChefChauffeursList({ user }) {
       <div className="page-header"><h2>👨‍✈️ Consultation des chauffeurs</h2><p className="header-info">Liste des chauffeurs de votre parc (consultation uniquement)</p></div>
       <div className="filters-bar">
         <div className="search-box"><input type="text" placeholder="Rechercher..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} /></div>
-        <div className="filter-select"><select value={filterDisponible} onChange={(e) => setFilterDisponible(e.target.value)}><option value="">Tous</option><option value="disponible">Disponible</option><option value="occupe">En mission</option><option value="congé">En congé</option></select></div>
+<div className="filter-select"><select value={filterDisponible} onChange={(e) => setFilterDisponible(e.target.value)}><option value="">Tous</option><option value="disponible">Disponible</option><option value="en_mission">En mission</option><option value="conge">En congé</option><option value="malade">Malade</option></select></div>
       </div>
       <div className="table-container">
         <table className="data-table">

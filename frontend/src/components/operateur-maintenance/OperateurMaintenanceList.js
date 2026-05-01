@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { getMaintenances, updateMaintenance } from '../../services/maintenance';
+import { getMaintenances, updateMaintenance, soumettreRapportMaintenance } from '../../services/maintenance';
 import { useNotification } from '../../context/NotificationContext';
 import '../../styles/chef.css';
 
@@ -11,6 +11,10 @@ function OperateurMaintenanceList({ user }) {
   const [filterUrgence, setFilterUrgence] = useState('');
   const [editingId, setEditingId] = useState(null);
   const [editData, setEditData] = useState({});
+  const [sendingReportId, setSendingReportId] = useState(null);
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportText, setReportText] = useState('');
+  const [selectedMaintenanceId, setSelectedMaintenanceId] = useState(null);
 
   const loadMaintenances = useCallback(async () => {
     try {
@@ -27,7 +31,6 @@ function OperateurMaintenanceList({ user }) {
 
   useEffect(() => {
     loadMaintenances();
-    // Vérifier les nouvelles maintenances toutes les 30 secondes
     const interval = setInterval(loadMaintenances, 30000);
     return () => clearInterval(interval);
   }, [loadMaintenances]);
@@ -48,7 +51,7 @@ function OperateurMaintenanceList({ user }) {
       const maintenance = maintenances.find(m => m.id === id);
       await updateMaintenance(id, { ...maintenance, statut: newStatut });
       await loadMaintenances();
-      
+
       const messages = {
         'EN_COURS': '✅ Maintenance marquée comme EN COURS',
         'TERMINEE': '✅ Maintenance marquée comme TERMINÉE'
@@ -71,13 +74,52 @@ function OperateurMaintenanceList({ user }) {
     try {
       const maintenance = maintenances.find(m => m.id === id);
       await updateMaintenance(id, { ...maintenance, ...editData });
-      await loadMaintenances();
       setEditingId(null);
       setEditData({});
-      showSuccess('✅ Maintenance mise à jour avec succès');
+      await loadMaintenances();
+      showSuccess('✅ Maintenance mise à jour');
     } catch (err) {
       console.error('Erreur sauvegarde maintenance', err);
       showError('Erreur lors de la sauvegarde');
+    }
+  };
+
+  const handleOpenReportModal = (maintenanceId) => {
+    setSelectedMaintenanceId(maintenanceId);
+    setReportText('');
+    setShowReportModal(true);
+  };
+
+  const handleCloseReportModal = () => {
+    setShowReportModal(false);
+    setReportText('');
+    setSelectedMaintenanceId(null);
+  };
+
+  const handleSubmitRapport = async () => {
+    if (!reportText.trim()) {
+      showError('Veuillez rédiger un rapport avant d\'envoyer');
+      return;
+    }
+    try {
+      setSendingReportId(selectedMaintenanceId);
+      console.log('📤 Soumission rapport:', { maintenanceId: selectedMaintenanceId });
+
+      const result = await soumettreRapportMaintenance(
+        selectedMaintenanceId,
+        reportText
+      );
+
+      console.log('✅ Rapport soumis:', result);
+      showSuccess('📄 Rapport soumis au chef de parc avec succès');
+      handleCloseReportModal();
+      await loadMaintenances();
+    } catch (err) {
+      const backendMsg = err.response?.data?.error || err.message;
+      console.error('❌ Erreur soumission rapport:', backendMsg, err);
+      showError(backendMsg || 'Erreur lors de la soumission du rapport');
+    } finally {
+      setSendingReportId(null);
     }
   };
 
@@ -222,6 +264,16 @@ function OperateurMaintenanceList({ user }) {
                               ✓ Terminer
                             </button>
                           )}
+
+                          {(m.statut === 'EN_COURS' || m.statut === 'TERMINEE') && (
+                            <button
+                              className="btn btn-sm btn-info"
+                              onClick={() => handleOpenReportModal(m.id)}
+                              disabled={sendingReportId === m.id}
+                            >
+                              {sendingReportId === m.id ? '⏳ Envoi...' : '📝 Rédiger rapport'}
+                            </button>
+                          )}
                         </>
                       ) : (
                         <>
@@ -277,8 +329,43 @@ function OperateurMaintenanceList({ user }) {
           </div>
         </div>
       </div>
+
+      {/* Modal de rédaction du rapport */}
+      {showReportModal && (
+        <div className="modal-overlay" onClick={handleCloseReportModal}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>📝 Rédiger le rapport de maintenance</h3>
+              <button className="modal-close" onClick={handleCloseReportModal}>✕</button>
+            </div>
+            <div className="modal-body">
+              <label>Description des travaux réalisés, observations, pièces remplacées, etc. :</label>
+              <textarea
+                value={reportText}
+                onChange={(e) => setReportText(e.target.value)}
+                placeholder="Rédigez votre rapport détaillé ici..."
+                rows="10"
+                className="report-textarea"
+              />
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={handleCloseReportModal}>
+                Annuler
+              </button>
+              <button
+                className="btn btn-primary"
+                onClick={handleSubmitRapport}
+                disabled={sendingReportId === selectedMaintenanceId || !reportText.trim()}
+              >
+                {sendingReportId === selectedMaintenanceId ? '⏳ Envoi...' : '📤 Soumettre le rapport'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
 export default OperateurMaintenanceList;
+

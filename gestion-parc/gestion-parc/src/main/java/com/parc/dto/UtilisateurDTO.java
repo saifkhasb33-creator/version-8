@@ -15,6 +15,9 @@ public class UtilisateurDTO {
     private boolean actif;
     private String motDePasse;
 
+// Photo
+    private String photo;
+
     // Chauffeur
     private String numeroPermis;
     private LocalDate dateExpirationPermis;
@@ -55,8 +58,11 @@ public class UtilisateurDTO {
     public boolean isActif() { return actif; }
     public void setActif(boolean actif) { this.actif = actif; }
 
-    public String getMotDePasse() { return motDePasse; }
+public String getMotDePasse() { return motDePasse; }
     public void setMotDePasse(String motDePasse) { this.motDePasse = motDePasse; }
+
+    public String getPhoto() { return photo; }
+    public void setPhoto(String photo) { this.photo = photo; }
 
     // Chauffeur
     public String getNumeroPermis() { return numeroPermis; }
@@ -85,6 +91,16 @@ public class UtilisateurDTO {
     public String getNiveau() { return niveau; }
     public void setNiveau(String niveau) { this.niveau = niveau; }
 
-    public Long getId_garage() { return id_garage; }
+public Long getId_garage() { return id_garage; }
     public void setId_garage(Long id_garage) { this.id_garage = id_garage; }
+
+    // Champs pour affichage (nom du parc/garage associe)
+    private String parcNom;
+    private String garageNom;
+
+    public String getParcNom() { return parcNom; }
+    public void setParcNom(String parcNom) { this.parcNom = parcNom; }
+
+    public String getGarageNom() { return garageNom; }
+    public void setGarageNom(String garageNom) { this.garageNom = garageNom; }
 }

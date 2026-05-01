@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getMaintenances, envoyerRapportMaintenanceAuChef } from '../../services/maintenance';
+import { getMaintenances, envoyerRapportMaintenanceAuChef, soumettreRapportMaintenance } from '../../services/maintenance';
 import { useNotification } from '../../context/NotificationContext';
 import '../../styles/chef.css';
 
@@ -9,6 +9,10 @@ function OperateurMaintenanceReports({ user }) {
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState('month'); // month, quarter, year
   const [reportType, setReportType] = useState('summary'); // summary, detailed, by-vehicle
+  const [sendingReportId, setSendingReportId] = useState(null);
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportText, setReportText] = useState('');
+  const [selectedMaintenanceId, setSelectedMaintenanceId] = useState(null);
 
   useEffect(() => {
     loadData();
@@ -55,6 +59,38 @@ function OperateurMaintenanceReports({ user }) {
     } catch (err) {
       console.error('Erreur envoi rapport PDF', err);
       showError("❌ Impossible d'envoyer le rapport PDF au chef");
+    }
+  };
+
+  const handleOpenReportModal = (maintenanceId) => {
+    setSelectedMaintenanceId(maintenanceId);
+    setReportText('');
+    setShowReportModal(true);
+  };
+
+  const handleCloseReportModal = () => {
+    setShowReportModal(false);
+    setReportText('');
+    setSelectedMaintenanceId(null);
+  };
+
+  const handleSubmitRapport = async () => {
+    if (!reportText.trim()) {
+      showError('Veuillez rédiger un rapport avant d\'envoyer');
+      return;
+    }
+    try {
+      setSendingReportId(selectedMaintenanceId);
+      await soumettreRapportMaintenance(selectedMaintenanceId, reportText);
+      showSuccess('📄 Rapport soumis au chef de parc avec succès');
+      handleCloseReportModal();
+      await loadData();
+    } catch (err) {
+      const backendMsg = err.response?.data?.error || err.message;
+      console.error('❌ Erreur soumission rapport:', backendMsg, err);
+      showError(backendMsg || 'Erreur lors de la soumission du rapport');
+    } finally {
+      setSendingReportId(null);
     }
   };
 
@@ -143,8 +179,17 @@ function OperateurMaintenanceReports({ user }) {
                         className="btn btn-sm btn-primary"
                         onClick={() => handleEnvoyerRapportPdf(m.id)}
                       >
-                        📄 Envoyer PDF au chef
+                        📄 PDF
                       </button>
+                      {(m.statut === 'EN_COURS' || m.statut === 'TERMINEE') && (
+                        <button
+                          className="btn btn-sm btn-info"
+                          onClick={() => handleOpenReportModal(m.id)}
+                          disabled={sendingReportId === m.id}
+                        >
+                          {sendingReportId === m.id ? '⏳...' : '📝 Rapport'}
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))
@@ -294,6 +339,40 @@ function OperateurMaintenanceReports({ user }) {
         {reportType === 'detailed' && generateDetailedReport()}
         {reportType === 'by-vehicle' && generateByVehicleReport()}
       </div>
+
+      {/* Modal de rédaction du rapport */}
+      {showReportModal && (
+        <div className="modal-overlay" onClick={handleCloseReportModal}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>📝 Rédiger le rapport de maintenance</h3>
+              <button className="modal-close" onClick={handleCloseReportModal}>✕</button>
+            </div>
+            <div className="modal-body">
+              <label>Description des travaux réalisés, observations, pièces remplacées, etc. :</label>
+              <textarea
+                value={reportText}
+                onChange={(e) => setReportText(e.target.value)}
+                placeholder="Rédigez votre rapport détaillé ici..."
+                rows="10"
+                className="report-textarea"
+              />
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={handleCloseReportModal}>
+                Annuler
+              </button>
+              <button
+                className="btn btn-primary"
+                onClick={handleSubmitRapport}
+                disabled={sendingReportId === selectedMaintenanceId || !reportText.trim()}
+              >
+                {sendingReportId === selectedMaintenanceId ? '⏳ Envoi...' : '📤 Soumettre le rapport'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

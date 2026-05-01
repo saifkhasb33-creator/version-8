@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import Sidebar from '../components/common/Sidebar';
 import Header from '../components/common/Header';
@@ -13,6 +13,7 @@ import ChefDeclarationsList from '../components/chef/ChefDeclarationsList';
 import ChefCongesList from '../components/chef/ChefCongesList';
 import ChefMaintenancesList from '../components/chef/ChefMaintenancesList';
 import ChefMaintenancesForm from '../components/chef/ChefMaintenancesForm';
+import ChefMaintenanceReports from '../components/chef/ChefMaintenanceReports';
 import ChefAssistant from '../components/chef/ChefAssistant';
 import { useAuth } from '../context/AuthContext';
 
@@ -40,13 +41,15 @@ function ChefDashboard() {
             <Route path="maintenances" element={<ChefMaintenancesList user={user} />} />
             <Route path="maintenances/new" element={<ChefMaintenancesForm />} />
             <Route path="maintenances/edit/:id" element={<ChefMaintenancesForm />} />
+            <Route path="rapports-maintenance" element={<ChefMaintenanceReports user={user} />} />
             <Route path="profil" element={<ChefProfil />} />
           </Routes>
         </div>
+        <ChefAssistant user={user} />
       </div>
-      <ChefAssistant user={user} />
     </div>
   );
 }
 
 export default ChefDashboard;
+

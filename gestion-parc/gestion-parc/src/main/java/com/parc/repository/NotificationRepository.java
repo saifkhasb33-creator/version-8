@@ -11,6 +11,17 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 public interface NotificationRepository extends JpaRepository<Notification, Long> {
+
+    void deleteByDestinataireId(Long destinataireId);
+
+    @Query("SELECT n FROM Notification n " +
+           "LEFT JOIN FETCH n.destinataire " +
+           "LEFT JOIN FETCH n.mission " +
+           "LEFT JOIN FETCH n.maintenance " +
+           "WHERE n.destinataire.id = :destinataireId " +
+           "ORDER BY n.dateEnvoi DESC")
+    List<Notification> findByDestinataireIdWithRelations(@Param("destinataireId") Long destinataireId);
+
     List<Notification> findByDestinataireIdOrderByDateEnvoiDesc(Long destinataireId);
     List<Notification> findByDestinataireIdAndStatutOrderByDateEnvoiDesc(Long destinataireId, StatutNotification statut);
     long countByDestinataireIdAndStatut(Long destinataireId, StatutNotification statut);

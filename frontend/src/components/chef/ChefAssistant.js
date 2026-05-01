@@ -19,15 +19,13 @@ function ChefAssistant({ user }) {
   const [connected, setConnected] = useState(false);
   const [stats, setStats] = useState({});
   const messagesEndRef = useRef(null);
-  const { showError, showSuccess } = useNotification();
+  const { showError } = useNotification();
 
-  // Vérifier connexion Ollama au démarrage
   useEffect(() => {
     checkOllamaConnection();
     loadStats();
   }, []);
 
-  // Scroll vers le dernier message
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
@@ -39,11 +37,9 @@ function ChefAssistant({ user }) {
       setMessages(prev => [...prev, {
         id: prev.length + 1,
         type: 'error',
-        text: '⚠️ Ollama n\'est pas accessible. Assurez-vous qu\'Ollama est démarré sur http://localhost:11434',
+        text: '⚠️ Assistant IA hors ligne. Vérifiez que le serveur backend et Ollama sont démarrés.',
         timestamp: new Date()
       }]);
-    } else {
-      showSuccess('✅ Ollama connecté avec succès!');
     }
   };
 
@@ -58,15 +54,12 @@ function ChefAssistant({ user }) {
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
-    
     if (!inputValue.trim()) return;
-    
     if (!connected) {
       showError('❌ Ollama non connecté. Veuillez le démarrer d\'abord.');
       return;
     }
 
-    // Ajouter le message utilisateur
     const userMessage = {
       id: messages.length + 1,
       type: 'user',
@@ -79,7 +72,6 @@ function ChefAssistant({ user }) {
     setLoading(true);
 
     try {
-      // Appeler l'IA avec contexte
       const response = await OllamaService.askAssistant(inputValue, {
         stats: stats,
         userId: user?.id,
@@ -98,7 +90,7 @@ function ChefAssistant({ user }) {
       const errorMessage = {
         id: messages.length + 2,
         type: 'error',
-        text: `❌ Erreur: ${error.message}`,
+        text: '❌ Erreur: ' + error.message,
         timestamp: new Date()
       };
       setMessages(prev => [...prev, errorMessage]);
@@ -110,7 +102,6 @@ function ChefAssistant({ user }) {
 
   return (
     <div className="chef-assistant-container">
-      {/* Bouton flottant */}
       <button
         className="assistant-toggle-btn"
         onClick={() => setIsOpen(!isOpen)}
@@ -119,22 +110,16 @@ function ChefAssistant({ user }) {
         {connected ? '💬' : '❌'}
       </button>
 
-      {/* Fenêtre ChatBot */}
       {isOpen && (
         <div className="assistant-window">
-          {/* Header */}
           <div className="assistant-header">
             <h3>🤖 Assistant IA - Chef de Parc</h3>
-            <button
-              className="close-btn"
-              onClick={() => setIsOpen(false)}
-            >
+            <button className="close-btn" onClick={() => setIsOpen(false)}>
               ✕
             </button>
           </div>
 
-          {/* Statut connexion */}
-          <div className={`connection-status ${connected ? 'connected' : 'disconnected'}`}>
+          <div className={'connection-status ' + (connected ? 'connected' : 'disconnected')}>
             {connected ? (
               <span>✅ Ollama Connecté</span>
             ) : (
@@ -142,13 +127,9 @@ function ChefAssistant({ user }) {
             )}
           </div>
 
-          {/* Messages */}
           <div className="messages-container">
             {messages.map((msg) => (
-              <div
-                key={msg.id}
-                className={`message ${msg.type}`}
-              >
+              <div key={msg.id} className={'message ' + msg.type}>
                 <div className="message-content">
                   {msg.type === 'user' && <span className="user-icon">👤</span>}
                   {msg.type === 'bot' && <span className="bot-icon">🤖</span>}
@@ -178,7 +159,6 @@ function ChefAssistant({ user }) {
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Input Form */}
           <form onSubmit={handleSendMessage} className="input-form">
             <input
               type="text"
@@ -197,7 +177,6 @@ function ChefAssistant({ user }) {
             </button>
           </form>
 
-          {/* Suggestions */}
           <div className="suggestions">
             <small>💡 Exemples de questions:</small>
             <div className="suggestion-chips">

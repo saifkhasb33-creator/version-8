@@ -1,12 +1,11 @@
 package com.parc.controller;
 
 import com.parc.dto.NotificationDTO;
-import com.parc.repository.UtilisateurRepository;
+import com.parc.security.CustomUserDetails;
 import com.parc.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -18,21 +17,13 @@ import java.util.List;
 public class NotificationController {
 
     private final NotificationService notificationService;
-    private final UtilisateurRepository utilisateurRepository;
-
-    private Long getUserIdByEmail(String email) {
-        return utilisateurRepository.findByEmailIgnoreCase(email)
-                .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"))
-                .getId();
-    }
 
     /**
      * Récupérer toutes les notifications de l'utilisateur connecté
      */
     @GetMapping
-    public ResponseEntity<List<NotificationDTO>> getNotifications(@AuthenticationPrincipal UserDetails userDetails) {
-        Long userId = getUserIdByEmail(userDetails.getUsername());
-        List<NotificationDTO> notifications = notificationService.getMesNotifications(userId);
+    public ResponseEntity<List<NotificationDTO>> getNotifications(@AuthenticationPrincipal CustomUserDetails userDetails) {
+        List<NotificationDTO> notifications = notificationService.getMesNotifications(userDetails.getId());
         return ResponseEntity.ok(notifications);
     }
 
@@ -40,9 +31,8 @@ public class NotificationController {
      * Récupérer les notifications non lues
      */
     @GetMapping("/unread")
-    public ResponseEntity<List<NotificationDTO>> getUnreadNotifications(@AuthenticationPrincipal UserDetails userDetails) {
-        Long userId = getUserIdByEmail(userDetails.getUsername());
-        List<NotificationDTO> notifications = notificationService.getMesNotifications(userId).stream()
+    public ResponseEntity<List<NotificationDTO>> getUnreadNotifications(@AuthenticationPrincipal CustomUserDetails userDetails) {
+        List<NotificationDTO> notifications = notificationService.getMesNotifications(userDetails.getId()).stream()
                 .filter(n -> "NON_LUE".equals(n.getStatut()))
                 .toList();
         return ResponseEntity.ok(notifications);
@@ -52,9 +42,8 @@ public class NotificationController {
      * Compter les notifications non lues
      */
     @GetMapping("/unread/count")
-    public ResponseEntity<Long> countUnread(@AuthenticationPrincipal UserDetails userDetails) {
-        Long userId = getUserIdByEmail(userDetails.getUsername());
-        long count = notificationService.getNonLuesCount(userId);
+    public ResponseEntity<Long> countUnread(@AuthenticationPrincipal CustomUserDetails userDetails) {
+        long count = notificationService.getNonLuesCount(userDetails.getId());
         return ResponseEntity.ok(count);
     }
 
@@ -71,9 +60,8 @@ public class NotificationController {
      * Marquer toutes les notifications comme lues
      */
     @PutMapping("/read-all")
-    public ResponseEntity<Void> markAllAsRead(@AuthenticationPrincipal UserDetails userDetails) {
-        Long userId = getUserIdByEmail(userDetails.getUsername());
-        notificationService.marquerToutesCommeLues(userId);
+    public ResponseEntity<Void> markAllAsRead(@AuthenticationPrincipal CustomUserDetails userDetails) {
+        notificationService.marquerToutesCommeLues(userDetails.getId());
         return ResponseEntity.ok().build();
     }
 
@@ -90,9 +78,8 @@ public class NotificationController {
      * Supprimer toutes les notifications
      */
     @DeleteMapping
-    public ResponseEntity<Void> deleteAllNotifications(@AuthenticationPrincipal UserDetails userDetails) {
-        Long utilisateurId = getUserIdByEmail(userDetails.getUsername());
-        notificationService.deleteAllNotifications(utilisateurId);
+    public ResponseEntity<Void> deleteAllNotifications(@AuthenticationPrincipal CustomUserDetails userDetails) {
+        notificationService.deleteAllNotifications(userDetails.getId());
         return ResponseEntity.noContent().build();
     }
 }

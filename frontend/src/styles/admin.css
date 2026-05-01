@@ -356,3 +356,42 @@
   text-align: right;
   font-weight: 500;
 }
+
+/* Styles pour les photos utilisateurs */
+.user-photo-mini {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #F4B942;
+}
+
+.user-photo-placeholder {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #F4B942;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.photo-preview {
+  width: 120px;
+  height: 120px;
+  border-radius: 12px;
+  object-fit: cover;
+  margin-top: 12px;
+  border: 2px solid #F4B942;
+}
+
+.photo-row {
+  margin-bottom: 24px !important;
+}
+
+.photo-input {
+  padding: 8px !important;
+}
