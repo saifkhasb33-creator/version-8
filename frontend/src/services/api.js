@@ -1,33 +1,46 @@
 import axios from 'axios';
-
+ 
 const api = axios.create({
   baseURL: process.env.REACT_APP_API_URL || 'http://localhost:8080/api',
 });
-
-// Intercepteur pour ajouter le token Bearer si l'utilisateur est connecté
+ 
+// ── Intercepteur requête : ajouter le token Bearer ──────────────────────────
 api.interceptors.request.use(config => {
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
-  if (user && user.token) {
-    console.log('🔐 Token Bearer envoyé');
-    config.headers.Authorization = `Bearer ${user.token}`;
-  } else {
-    console.warn('⚠️ Aucun token trouvé dans localStorage');
+  try {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    if (user && user.token) {
+      config.headers.Authorization = `Bearer ${user.token}`;
+    }
+  } catch (e) {
+    // localStorage corrompu → ignorer
   }
   return config;
 });
-
-// Intercepteur pour gérer les erreurs de réponse
+ 
+// ── Intercepteur réponse : gérer les erreurs d'authentification ─────────────
 api.interceptors.response.use(
   response => response,
   error => {
-    const isLoginRequest = error.config?.url?.includes('/auth/login');
-    if (error.response?.status === 401 && !isLoginRequest) {
-      console.error('❌ Authentification expirée');
+    const status  = error.response?.status;
+    const url     = error.config?.url || '';
+ 
+    const isLoginRequest       = url.includes('/auth/login');
+    const isNotificationRequest = url.includes('/notifications');
+ 
+    // ⚠️ Déconnecter SEULEMENT si :
+    //  - statut 401 (non authentifié)
+    //  - ce n'est PAS une requête de login
+    //  - ce n'est PAS une requête de notification (qui peut échouer normalement)
+    if (status === 401 && !isLoginRequest && !isNotificationRequest) {
+      console.error('❌ Session expirée — déconnexion');
       localStorage.removeItem('user');
       window.location.href = '/login';
     }
+ 
+    // ⚠️ Ne JAMAIS déconnecter sur 403 (accès refusé ≠ session expirée)
+ 
     return Promise.reject(error);
   }
 );
-
+ 
 export default api;

@@ -5,38 +5,42 @@ import java.time.LocalDate;
 
 public class UtilisateurDTO {
 
-    // Champs communs
-    private Long id;
+    // ─── Champs communs ───────────────────────────────────
+    private Long   id;
     private String nom;
     private String prenom;
     private String email;
     private String telephone;
-    private Role role;
+    private Role   role;
     private boolean actif;
     private String motDePasse;
 
-// Photo
+    /** Photo stockée en Data URI Base64 (data:image/jpeg;base64,...) */
     private String photo;
 
-    // Chauffeur
-    private String numeroPermis;
+    // ─── Chauffeur ────────────────────────────────────────
+    private String    numeroPermis;
     private LocalDate dateExpirationPermis;
-    private String disponible;
-    private Long id_parc;
+    /** Valeurs : "disponible" | "en_mission" | "conge" | "malade" */
+    private String    disponible;
+    private Long      id_parc;
+    private String    parcNom;          // lecture seule (affichage)
 
-    // Chef de parc
+    // ─── Chef de parc ─────────────────────────────────────
     private LocalDate dateEmbauche;
-    private String zoneAffectation;
+    private String    zoneAffectation;
 
-    // Opérateur maintenance
+    // ─── Opérateur maintenance ────────────────────────────
     private String specialite;
     private String niveau;
-    private Long id_garage;
+    private Long   id_garage;
+    private String garageNom;           // lecture seule (affichage)
 
-    // Constructeurs
+    // ─── Constructeurs ────────────────────────────────────
     public UtilisateurDTO() {}
 
-    // Getters & Setters (tous les champs)
+    // ─── Getters & Setters ────────────────────────────────
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -58,7 +62,7 @@ public class UtilisateurDTO {
     public boolean isActif() { return actif; }
     public void setActif(boolean actif) { this.actif = actif; }
 
-public String getMotDePasse() { return motDePasse; }
+    public String getMotDePasse() { return motDePasse; }
     public void setMotDePasse(String motDePasse) { this.motDePasse = motDePasse; }
 
     public String getPhoto() { return photo; }
@@ -69,13 +73,18 @@ public String getMotDePasse() { return motDePasse; }
     public void setNumeroPermis(String numeroPermis) { this.numeroPermis = numeroPermis; }
 
     public LocalDate getDateExpirationPermis() { return dateExpirationPermis; }
-    public void setDateExpirationPermis(LocalDate dateExpirationPermis) { this.dateExpirationPermis = dateExpirationPermis; }
+    public void setDateExpirationPermis(LocalDate dateExpirationPermis) {
+        this.dateExpirationPermis = dateExpirationPermis;
+    }
 
     public String getDisponible() { return disponible; }
     public void setDisponible(String disponible) { this.disponible = disponible; }
 
     public Long getId_parc() { return id_parc; }
     public void setId_parc(Long id_parc) { this.id_parc = id_parc; }
+
+    public String getParcNom() { return parcNom; }
+    public void setParcNom(String parcNom) { this.parcNom = parcNom; }
 
     // Chef de parc
     public LocalDate getDateEmbauche() { return dateEmbauche; }
@@ -91,15 +100,8 @@ public String getMotDePasse() { return motDePasse; }
     public String getNiveau() { return niveau; }
     public void setNiveau(String niveau) { this.niveau = niveau; }
 
-public Long getId_garage() { return id_garage; }
+    public Long getId_garage() { return id_garage; }
     public void setId_garage(Long id_garage) { this.id_garage = id_garage; }
-
-    // Champs pour affichage (nom du parc/garage associe)
-    private String parcNom;
-    private String garageNom;
-
-    public String getParcNom() { return parcNom; }
-    public void setParcNom(String parcNom) { this.parcNom = parcNom; }
 
     public String getGarageNom() { return garageNom; }
     public void setGarageNom(String garageNom) { this.garageNom = garageNom; }

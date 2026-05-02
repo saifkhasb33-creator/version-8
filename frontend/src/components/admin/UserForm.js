@@ -1,131 +1,55 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getUtilisateur, createUtilisateur, updateUtilisateur } from '../../services/utilisateur';
-import { getParcs } from '../../services/parc';
-import { getGarages } from '../../services/garage';
 
 function UserForm() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [parcs, setParcs] = useState([]);
-  const [loadingParcs, setLoadingParcs] = useState(false);
-  const [garages, setGarages] = useState([]);
-  const [loadingGarages, setLoadingGarages] = useState(false);
-  const [user, setUser] = useState({
-    nom: '',
-    prenom: '',
-    email: '',
-    telephone: '',
-    role: 'CHAUFFEUR',
-    actif: true,
-    motDePasse: '',
-    numeroPermis: '',
-    dateExpirationPermis: '',
-    disponible: 'disponible',
-    id_parc: '',
-    dateEmbauche: '',
-    zoneAffectation: '',
-    specialite: '',
-    niveau: 'intermédiaire',
-    id_garage: '',
+  const [formData, setFormData] = useState({
+    nom: '', prenom: '', email: '', telephone: '', motDePasse: '',
+    role: 'CHAUFFEUR', actif: true,
+    // Chauffeur
+    numeroPermis: '', dateExpirationPermis: '', disponible: 'disponible', id_parc: '',
+    // Chef
+    dateEmbauche: '', zoneAffectation: '',
+    // Opérateur
+    specialite: '', id_garage: ''
   });
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-
   const isEditMode = !!id;
 
   useEffect(() => {
-    const fetchParcs = async () => {
-      setLoadingParcs(true);
-      try {
-        const response = await getParcs();
-        setParcs(response.data);
-      } catch (err) {
-        console.error('Erreur chargement parcs', err);
-      } finally {
-        setLoadingParcs(false);
-      }
-    };
-
-    const fetchGarages = async () => {
-      setLoadingGarages(true);
-      try {
-        const response = await getGarages();
-        setGarages(response.data);
-      } catch (err) {
-        console.error('Erreur chargement garages', err);
-      } finally {
-        setLoadingGarages(false);
-      }
-    };
-
-    fetchParcs();
-    fetchGarages();
-
     if (isEditMode) {
       const fetchUser = async () => {
         try {
-          const response = await getUtilisateur(id);
-          setUser(prev => ({ ...prev, ...response.data }));
-        } catch (err) {
-          setError('Erreur lors du chargement de l’utilisateur');
-        }
+          const res = await getUtilisateur(id);
+          setFormData(res.data);
+        } catch (err) { console.error(err); }
       };
       fetchUser();
     }
-  }, [id, isEditMode]);
+  }, [id]);
 
-const handleChange = (e) => {
+  const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setUser(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value,
-    }));
-  };
-
-  const handlePhotoChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setUser(prev => ({ ...prev, photo: reader.result }));
-      };
-      reader.readAsDataURL(file);
-    }
+    setFormData(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
-    setSuccess('');
     try {
-      if (isEditMode) {
-        await updateUtilisateur(id, user);
-        setSuccess('Utilisateur modifié avec succès');
-      } else {
-        await createUtilisateur(user);
-        setSuccess('Utilisateur créé avec succès');
-        setUser({
-          nom: '', prenom: '', email: '', telephone: '', role: 'CHAUFFEUR', actif: true, motDePasse: '',
-          numeroPermis: '', dateExpirationPermis: '', disponible: 'disponible', id_parc: '',
-          dateEmbauche: '', zoneAffectation: '',
-          specialite: '', niveau: 'intermédiaire', id_garage: '',
-        });
-      }
-      setTimeout(() => navigate('/admin/users'), 1500);
-    } catch (err) {
-      setError('Erreur lors de l’enregistrement');
-    } finally {
-      setLoading(false);
-    }
+      if (isEditMode) await updateUtilisateur(id, formData);
+      else await createUtilisateur(formData);
+      navigate('/admin/users');
+    } catch (err) { alert('Erreur enregistrement'); } finally { setLoading(false); }
   };
 
   const roles = [
-    { value: 'CHAUFFEUR', label: 'Chauffeur' },
+    { value: 'ADMIN', label: 'Administrateur' },
     { value: 'CHEF', label: 'Chef de parc' },
-    { value: 'OPERATEUR_MAINTENANCE', label: 'Opérateur maintenance' },
+    { value: 'CHAUFFEUR', label: 'Chauffeur' },
+    { value: 'OPERATEUR_MAINTENANCE', label: 'Opérateur maintenance' }
   ];
 
   return (
@@ -134,94 +58,61 @@ const handleChange = (e) => {
         <h2>{isEditMode ? 'Modifier' : 'Ajouter'} un utilisateur</h2>
         <button className="btn-secondary" onClick={() => navigate('/admin/users')}>← Retour</button>
       </div>
-
-      {error && <div className="alert alert-error">{error}</div>}
-      {success && <div className="alert alert-success">{success}</div>}
-
       <form onSubmit={handleSubmit} className="user-form">
-{/* Champs communs */}
-        <div className="form-row photo-row">
-          <div className="form-group">
-            <label>Photo de profil</label>
-            <input type="file" accept="image/*" onChange={handlePhotoChange} className="photo-input" />
-            {user.photo && <img src={user.photo} alt="Aperçu" className="photo-preview" />}
-          </div>
+        <div className="form-row">
+          <div className="form-group"><label>Nom *</label><input type="text" name="nom" value={formData.nom} onChange={handleChange} required /></div>
+          <div className="form-group"><label>Prénom *</label><input type="text" name="prenom" value={formData.prenom} onChange={handleChange} required /></div>
         </div>
         <div className="form-row">
-          <div className="form-group"><label>Nom *</label><input type="text" name="nom" value={user.nom} onChange={handleChange} required /></div>
-          <div className="form-group"><label>Prénom *</label><input type="text" name="prenom" value={user.prenom} onChange={handleChange} required /></div>
+          <div className="form-group"><label>Email *</label><input type="email" name="email" value={formData.email} onChange={handleChange} required /></div>
+          <div className="form-group"><label>Téléphone</label><input type="tel" name="telephone" value={formData.telephone} onChange={handleChange} /></div>
         </div>
+        {!isEditMode && (
+          <div className="form-group"><label>Mot de passe</label><input type="password" name="motDePasse" value={formData.motDePasse} onChange={handleChange} /></div>
+        )}
         <div className="form-row">
-          <div className="form-group"><label>Email *</label><input type="email" name="email" value={user.email} onChange={handleChange} required /></div>
-          <div className="form-group"><label>Téléphone</label><input type="tel" name="telephone" value={user.telephone} onChange={handleChange} /></div>
-        </div>
-        <div className="form-row">
-          <div className="form-group"><label>Rôle *</label><select name="role" value={user.role} onChange={handleChange} required>
-            {roles.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
-          </select></div>
-          <div className="form-group checkbox-group"><label><input type="checkbox" name="actif" checked={user.actif} onChange={handleChange} /> Compte actif</label></div>
-        </div>
-        <div className="form-row">
-          <div className="form-group"><label>Mot de passe</label><input type="password" name="motDePasse" value={user.motDePasse} onChange={handleChange} placeholder="Laissez vide pour 'default123'" /></div>
+          <div className="form-group"><label>Rôle</label><select name="role" value={formData.role} onChange={handleChange}>{roles.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}</select></div>
+          <div className="form-group checkbox-group"><label><input type="checkbox" name="actif" checked={formData.actif} onChange={handleChange} /> Actif</label></div>
         </div>
 
-        {/* Chauffeur */}
-        {user.role === 'CHAUFFEUR' && (
+        {/* Champs spécifiques Chauffeur */}
+        {formData.role === 'CHAUFFEUR' && (
           <div className="role-fields">
             <h3>Chauffeur</h3>
             <div className="form-row">
-              <div className="form-group"><label>Numéro permis</label><input type="text" name="numeroPermis" value={user.numeroPermis} onChange={handleChange} /></div>
-              <div className="form-group"><label>Date expiration permis</label><input type="date" name="dateExpirationPermis" value={user.dateExpirationPermis} onChange={handleChange} /></div>
+              <div className="form-group"><label>Numéro permis</label><input type="text" name="numeroPermis" value={formData.numeroPermis} onChange={handleChange} /></div>
+              <div className="form-group"><label>Expiration permis</label><input type="date" name="dateExpirationPermis" value={formData.dateExpirationPermis} onChange={handleChange} /></div>
             </div>
             <div className="form-row">
-<div className="form-group"><label>Disponibilité</label><select name="disponible" value={user.disponible} onChange={handleChange}>
-                <option value="disponible">Disponible</option>
-                <option value="en_mission">En mission</option>
-                <option value="conge">En congé</option>
-                <option value="malade">Malade</option>
-              </select></div>
-              <div className="form-group"><label>Parc</label><select name="id_parc" value={user.id_parc} onChange={handleChange}>
-                <option value="">-- Sélectionner --</option>
-                {loadingParcs ? <option disabled>Chargement...</option> : parcs.map(p => <option key={p.id} value={p.id}>{p.nom}</option>)}
-              </select></div>
+              <div className="form-group"><label>Disponibilité</label><select name="disponible" value={formData.disponible} onChange={handleChange}><option value="disponible">Disponible</option><option value="occupe">En mission</option><option value="conge">Congé</option></select></div>
+              <div className="form-group"><label>Parc</label><input type="number" name="id_parc" value={formData.id_parc} onChange={handleChange} placeholder="ID parc" /></div>
             </div>
           </div>
         )}
 
-        {/* Chef de parc */}
-        {user.role === 'CHEF' && (
+        {/* Champs spécifiques Chef */}
+        {formData.role === 'CHEF' && (
           <div className="role-fields">
             <h3>Chef de parc</h3>
             <div className="form-row">
-              <div className="form-group"><label>Date d'embauche</label><input type="date" name="dateEmbauche" value={user.dateEmbauche} onChange={handleChange} /></div>
-              <div className="form-group"><label>Zone affectation</label><input type="text" name="zoneAffectation" value={user.zoneAffectation} onChange={handleChange} /></div>
+              <div className="form-group"><label>Date embauche</label><input type="date" name="dateEmbauche" value={formData.dateEmbauche} onChange={handleChange} /></div>
+              <div className="form-group"><label>Zone affectation</label><input type="text" name="zoneAffectation" value={formData.zoneAffectation} onChange={handleChange} /></div>
             </div>
             <div className="form-row">
-              <div className="form-group"><label>Parc</label><select name="id_parc" value={user.id_parc} onChange={handleChange}>
-                <option value="">-- Sélectionner --</option>
-                {loadingParcs ? <option disabled>Chargement...</option> : parcs.map(p => <option key={p.id} value={p.id}>{p.nom}</option>)}
-              </select></div>
+              <div className="form-group"><label>Parc</label><input type="number" name="id_parc" value={formData.id_parc} onChange={handleChange} placeholder="ID parc" /></div>
             </div>
           </div>
         )}
 
-        {/* Opérateur maintenance */}
-        {user.role === 'OPERATEUR_MAINTENANCE' && (
+        {/* Champs spécifiques Opérateur */}
+        {formData.role === 'OPERATEUR_MAINTENANCE' && (
           <div className="role-fields">
             <h3>Opérateur maintenance</h3>
             <div className="form-row">
-              <div className="form-group"><label>Spécialité</label><input type="text" name="specialite" value={user.specialite} onChange={handleChange} /></div>
-              <div className="form-group"><label>Date d'embauche</label><input type="date" name="dateEmbauche" value={user.dateEmbauche} onChange={handleChange} /></div>
+              <div className="form-group"><label>Spécialité</label><input type="text" name="specialite" value={formData.specialite} onChange={handleChange} /></div>
+              <div className="form-group"><label>Date embauche</label><input type="date" name="dateEmbauche" value={formData.dateEmbauche} onChange={handleChange} /></div>
             </div>
-            <div className="form-row">
-              <div className="form-group"><label>Niveau</label><select name="niveau" value={user.niveau} onChange={handleChange}>
-                <option value="débutant">Débutant</option><option value="intermédiaire">Intermédiaire</option><option value="expert">Expert</option>
-              </select></div>
-              <div className="form-group"><label>Garage associé</label><select name="id_garage" value={user.id_garage} onChange={handleChange}>
-                <option value="">-- Sélectionner un garage --</option>
-                {loadingGarages ? <option disabled>Chargement des garages...</option> : garages.map(g => <option key={g.id} value={g.id}>{g.adresse || `Garage ${g.id}`}</option>)}
-              </select></div>
-            </div>
+            <div className="form-group"><label>Garage</label><input type="number" name="id_garage" value={formData.id_garage} onChange={handleChange} placeholder="ID garage" /></div>
           </div>
         )}
 

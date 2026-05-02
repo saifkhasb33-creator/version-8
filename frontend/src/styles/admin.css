@@ -16,6 +16,21 @@
   gap: 16px;
 }
 
+/* Ajoutez les styles pour les champs dynamiques */
+.role-fields {
+  margin-top: 20px;
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border-left: 4px solid #F5B81B;
+}
+.role-fields h3 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  font-size: 1rem;
+  color: #F5B81B;
+}
+
 .page-header h2 {
   font-size: 24px;
   font-weight: 600;
