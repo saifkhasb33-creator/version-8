@@ -3,17 +3,17 @@ package com.parc;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.security.core.userdetails.UserDetailsService;
+import com.parc.service.UtilisateurService;
 
 @SpringBootTest
 class GestionParcApplicationTests {
 
-    // Mock du UserDetailsService pour que Spring puisse démarrer le contexte
+    // Mock du service attendu par SecurityConfig
     @MockBean
-    private UserDetailsService userDetailsService;
+    private UtilisateurService utilisateurService;
 
     @Test
     void contextLoads() {
         // Test minimal pour vérifier le démarrage du contexte
     }
-}   
+}

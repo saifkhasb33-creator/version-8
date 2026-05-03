@@ -6,6 +6,8 @@ import com.parc.domain.enums.TypeNotification;
 import com.parc.dto.NotificationDTO;
 import com.parc.repository.*;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,6 +18,8 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class NotificationService {
+
+    private static final Logger log = LoggerFactory.getLogger(NotificationService.class);
 
     private final NotificationRepository notificationRepository;
     private final UtilisateurRepository utilisateurRepository;
@@ -52,6 +56,17 @@ public class NotificationService {
         return dto;
     }
 
+    // Récupérer l'ID du premier chef de parc (ou null si inexistant)
+    public Long getChefParcId() {
+        List<Utilisateur> chefs = utilisateurRepository.findByRole("CHEF");
+        if (chefs.isEmpty()) {
+            log.error("❌ Aucun chef de parc trouvé avec le rôle CHEF !");
+            return null;
+        }
+        log.info("✅ Chef de parc trouvé: id={}, nom={}", chefs.get(0).getId(), chefs.get(0).getNom());
+        return chefs.get(0).getId();
+    }
+
     // Méthode générique d'envoi
     @Transactional
     public NotificationDTO envoyerNotification(Long destinataireId, String titre, String message,
@@ -77,13 +92,63 @@ public class NotificationService {
         }
 
         Notification saved = notificationRepository.save(notif);
+        log.info("📨 Notification enregistrée (id={}) pour l'utilisateur {} : {}", saved.getId(), destinataireId, titre);
 
-        // Envoi push si disponible
         if (destinataire instanceof Chauffeur && ((Chauffeur) destinataire).getFcmToken() != null) {
             pushService.sendPush(((Chauffeur) destinataire).getFcmToken(), titre, message);
         }
 
         return toDTO(saved);
+    }
+
+    // ✅ Notifications accidents — gère le cas sans véhicule
+    public void notifierAccidentDeclare(Long chefParcId, Accident accident) {
+        if (chefParcId == null) {
+            log.warn("⚠️ Notification accident ignorée : chefParcId null");
+            return;
+        }
+        String nomChauffeur = accident.getChauffeur() != null
+            ? accident.getChauffeur().getNom() + " " + accident.getChauffeur().getPrenom()
+            : "Chauffeur inconnu";
+        // ✅ getMatricule() uniquement si véhicule présent
+        String vehiculeInfo = (accident.getVehicule() != null)
+            ? "véhicule " + accident.getVehicule().getMatricule()
+            : "véhicule non renseigné";
+
+        log.info("📨 Envoi notification accident au chef {} pour accident {}", chefParcId, accident.getId());
+        envoyerNotification(chefParcId,
+            "🚨 Accident déclaré",
+            "Accident déclaré (" + vehiculeInfo + ") par " + nomChauffeur +
+            " - Lieu : " + accident.getLieuAccident(),
+            TypeNotification.ACCIDENT_DECLARE,
+            "/accidents/" + accident.getId(),
+            null, null);
+    }
+
+    // ✅ Notifications amendes — gère le cas sans véhicule
+    public void notifierAmendeDeclaree(Long chefParcId, Amende amende) {
+        if (chefParcId == null) {
+            log.warn("⚠️ Notification amende ignorée : chefParcId null");
+            return;
+        }
+        String nomChauffeur = amende.getChauffeur() != null
+            ? amende.getChauffeur().getNom() + " " + amende.getChauffeur().getPrenom()
+            : "Chauffeur inconnu";
+        // ✅ getMatricule() uniquement si véhicule présent
+        String vehiculeInfo = (amende.getVehicule() != null)
+            ? "véhicule " + amende.getVehicule().getMatricule()
+            : "véhicule non renseigné";
+
+        log.info("📨 Envoi notification amende au chef {} pour amende {}", chefParcId, amende.getId());
+        envoyerNotification(chefParcId,
+            "⚠️ Amende déclarée",
+            "Amende déclarée par " + nomChauffeur +
+            " (" + vehiculeInfo + ")" +
+            " - Montant : " + amende.getMontant() + " TND" +
+            " - Motif : " + amende.getMotif(),
+            TypeNotification.AMENDE_DECLAREE,
+            "/amendes/" + amende.getId(),
+            null, null);
     }
 
     // Notifications pour missions
@@ -170,34 +235,12 @@ public class NotificationService {
             null, null);
     }
 
-    // Alerte consommation
     public void alerterDepassementConsommation(Vehicule vehicule, double consommation, double seuil) {
         envoyerNotification(vehicule.getParc().getChef().getId(),
             "Dépassement de consommation",
             "Le véhicule " + vehicule.getMatricule() + " a une consommation anormale : " + consommation + " L/100km (seuil: " + seuil + ")",
             TypeNotification.DEPASSEMENT_CONSOMMATION,
             "/vehicules/" + vehicule.getId() + "/consommation",
-            null, null);
-    }
-
-    // Notifications accidents/amendes
-    public void notifierAccidentDeclare(Long chefParcId, Accident accident) {
-        envoyerNotification(chefParcId,
-            "Accident déclaré",
-            "Accident déclaré pour le véhicule " + accident.getVehicule().getMatricule() +
-            " par " + accident.getChauffeur().getNom() + " " + accident.getChauffeur().getPrenom(),
-            TypeNotification.ACCIDENT_DECLARE,
-            "/accidents/" + accident.getId(),
-            null, null);
-    }
-
-    public void notifierAmendeDeclaree(Long chefParcId, Amende amende) {
-        envoyerNotification(chefParcId,
-            "Amende déclarée",
-            "Amende déclarée pour le véhicule " + amende.getVehicule().getMatricule() +
-            " - Montant: " + amende.getMontant() + " TND",
-            TypeNotification.AMENDE_DECLAREE,
-            "/amendes/" + amende.getId(),
             null, null);
     }
 
@@ -235,6 +278,13 @@ public class NotificationService {
         envoyerNotification(chauffeurId, "Notification", message, TypeNotification.ALERTE_GENERALE, null, null, null);
     }
 
+    public void envoyerNotificationChefParc(String message) {
+        Long chefId = getChefParcId();
+        if (chefId != null) {
+            envoyerNotification(chefId, "Notification", message, TypeNotification.ALERTE_GENERALE, null, null, null);
+        }
+    }
+
     // Récupération des notifications
     public List<NotificationDTO> getMesNotifications(Long utilisateurId) {
         return notificationRepository.findByDestinataireIdWithRelations(utilisateurId)
@@ -257,25 +307,12 @@ public class NotificationService {
         notifications.forEach(n -> n.setStatut(StatutNotification.LUE));
         notificationRepository.saveAll(notifications);
     }
-    public void envoyerNotificationChefParc(String message) {
-    // Récupérer le chef de parc (par exemple le premier admin ou un paramètre)
-    // Pour simplifier, on peut envoyer à l'admin par défaut
-    Utilisateur chef = utilisateurRepository.findByRole("CHEF").stream().findFirst()
-            .orElseThrow(() -> new RuntimeException("Aucun chef de parc trouvé"));
-    envoyerNotification(chef.getId(), "Notification", message, TypeNotification.ALERTE_GENERALE, null, null, null);
-}
 
-    /**
-     * Supprimer une notification par ID
-     */
     @Transactional
     public void deleteNotification(Long notificationId) {
         notificationRepository.deleteById(notificationId);
     }
 
-    /**
-     * Supprimer toutes les notifications d'un utilisateur
-     */
     @Transactional
     public void deleteAllNotifications(Long utilisateurId) {
         List<Notification> notifications = notificationRepository.findByDestinataireIdOrderByDateEnvoiDesc(utilisateurId);

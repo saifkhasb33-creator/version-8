@@ -55,10 +55,11 @@ function OperateurMaintenanceReports({ user }) {
   const handleEnvoyerRapportPdf = async (maintenanceId) => {
     try {
       await envoyerRapportMaintenanceAuChef(maintenanceId);
-      showSuccess('✅ Rapport PDF envoye au chef. Une notification a ete creee.');
+      showSuccess('✅ Rapport PDF envoyé au chef. Une notification a été créée.');
     } catch (err) {
-      console.error('Erreur envoi rapport PDF', err);
-      showError("❌ Impossible d'envoyer le rapport PDF au chef");
+      const backendMsg = err.response?.data?.error || err.message;
+      console.error('Erreur envoi rapport PDF', backendMsg, err);
+      showError(backendMsg || "❌ Impossible d'envoyer le rapport PDF au chef");
     }
   };
 
@@ -76,7 +77,7 @@ function OperateurMaintenanceReports({ user }) {
 
   const handleSubmitRapport = async () => {
     if (!reportText.trim()) {
-      showError('Veuillez rédiger un rapport avant d\'envoyer');
+      showError("Veuillez rédiger un rapport avant d'envoyer");
       return;
     }
     try {
@@ -181,15 +182,14 @@ function OperateurMaintenanceReports({ user }) {
                       >
                         📄 PDF
                       </button>
-                      {(m.statut === 'EN_COURS' || m.statut === 'TERMINEE') && (
-                        <button
-                          className="btn btn-sm btn-info"
-                          onClick={() => handleOpenReportModal(m.id)}
-                          disabled={sendingReportId === m.id}
-                        >
-                          {sendingReportId === m.id ? '⏳...' : '📝 Rapport'}
-                        </button>
-                      )}
+                      {/* FIX : Le bouton rapport est maintenant disponible pour TOUS les statuts */}
+                      <button
+                        className="btn btn-sm btn-info"
+                        onClick={() => handleOpenReportModal(m.id)}
+                        disabled={sendingReportId === m.id}
+                      >
+                        {sendingReportId === m.id ? '⏳...' : '📝 Rapport'}
+                      </button>
                     </td>
                   </tr>
                 ))
@@ -225,7 +225,7 @@ function OperateurMaintenanceReports({ user }) {
 
       byVehicle[vehicleId].total++;
       byVehicle[vehicleId].cost += m.cout || 0;
-      byVehicle[vehicleId].statuts[m.statut]++;
+      byVehicle[vehicleId].statuts[m.statut] = (byVehicle[vehicleId].statuts[m.statut] || 0) + 1;
       byVehicle[vehicleId].maintenances.push(m);
     });
 
@@ -246,15 +246,15 @@ function OperateurMaintenanceReports({ user }) {
               </div>
               <div className="stat-item">
                 <span>Planifiées:</span>
-                <strong>{vehicle.statuts.PLANIFIEE}</strong>
+                <strong>{vehicle.statuts.PLANIFIEE || 0}</strong>
               </div>
               <div className="stat-item">
                 <span>En Cours:</span>
-                <strong>{vehicle.statuts.EN_COURS}</strong>
+                <strong>{vehicle.statuts.EN_COURS || 0}</strong>
               </div>
               <div className="stat-item">
                 <span>Terminées:</span>
-                <strong>{vehicle.statuts.TERMINEE}</strong>
+                <strong>{vehicle.statuts.TERMINEE || 0}</strong>
               </div>
             </div>
             <table className="mini-table">
@@ -293,7 +293,7 @@ function OperateurMaintenanceReports({ user }) {
     <div className="chef-container">
       <div className="section-header">
         <h1>📊 Rapports de Maintenance</h1>
-        <p>Consultez les rapports de maintenance</p>
+        <p>Consultez et envoyez les rapports de maintenance</p>
       </div>
 
       {/* Sélecteurs */}

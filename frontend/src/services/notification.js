@@ -12,5 +12,13 @@ export const getUnreadNotificationCount = () => api.get('/notifications/unread/c
 // Marquer une notification comme lue
 export const markAsRead = (id) => api.put(`/notifications/${id}/read`);
 
+// Marquer toutes les notifications comme lues
+export const markAllAsRead = () => api.put('/notifications/read-all');
+
 // Supprimer une notification
 export const deleteNotification = (id) => api.delete(`/notifications/${id}`);
+
+// --- Compatibilité avec l'ancien naming utilisé dans certains composants ---
+export const marquerLu = markAsRead;
+export const marquerTousLus = markAllAsRead;
+export const supprimerNotification = deleteNotification;

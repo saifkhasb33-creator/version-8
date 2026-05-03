@@ -51,7 +51,7 @@ const NotificationPanel = ({ user }) => {
   const handleMarquerLu = async (id) => {
     try {
       await marquerLu(id);
-      setNotifications(prev => prev.map(n => n.id === id ? { ...n, lu: true } : n));
+      setNotifications(prev => prev.map(n => n.id === id ? { ...n, lue: true } : n));
     } catch (e) {
       showError('Erreur mise à jour notification');
     }
@@ -59,8 +59,8 @@ const NotificationPanel = ({ user }) => {
 
   const handleMarquerTousLus = async () => {
     try {
-      await marquerTousLus();
-      setNotifications(prev => prev.map(n => ({ ...n, lu: true })));
+    await marquerTousLus();
+      setNotifications(prev => prev.map(n => ({ ...n, lue: true })));
       showSuccess('✅ Toutes les notifications marquées comme lues');
     } catch (e) {
       showError('Erreur');
@@ -89,8 +89,8 @@ const NotificationPanel = ({ user }) => {
     }
   };
 
-  const nonLues = notifications.filter(n => !n.lu);
-  const lues = notifications.filter(n => n.lu);
+  const nonLues = notifications.filter(n => !n.lue);
+  const lues = notifications.filter(n => n.lue);
 
   return (
     <div className="notification-panel">

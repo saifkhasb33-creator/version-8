@@ -24,7 +24,8 @@ public class Maintenance {
 
     private String operateur;
 
-    @Column(name = "rapport_probleme", length = 1000)
+    // FIX : columnDefinition = "TEXT" pour supporter des rapports longs (>1000 chars)
+    @Column(name = "rapport_probleme", columnDefinition = "TEXT")
     private String rapportProbleme;
 
     @Column(name = "date_realisation")

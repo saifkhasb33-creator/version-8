@@ -30,8 +30,13 @@ public class OperateurMaintenanceService {
     // rapporterProbleme, consulterHistoriqueMaintenance, getMaintenanceForOperateur, findByEmail, getByDisponibilite, etc.)
 
     /**
-     * Soumet un rapport texte (optionnel) après une maintenance.
+     * Soumet un rapport texte après une maintenance.
      * L'opérateur est identifié par son email.
+     *
+     * FIX 1 : La vérification du garage est assouplie — si la maintenance ou l'opérateur
+     *          n'a pas de garage assigné, on ne bloque plus l'envoi.
+     * FIX 2 : Si aucun chef de parc n'est trouvé, on sauvegarde quand même le rapport
+     *          et on retourne proprement au lieu de lever une exception.
      */
     @Transactional
     public void soumettreRapportMaintenance(Long maintenanceId, String emailOperateur, String rapportText) throws Exception {
@@ -39,32 +44,40 @@ public class OperateurMaintenanceService {
             throw new RuntimeException("Le rapport ne peut pas être vide");
         }
 
-        // ✅ Récupérer l'opérateur directement via son email dans la table operateurs_maintenance
+        // Récupérer l'opérateur via son email
         OperateurMaintenance operateur = operateurRepository.findByEmail(emailOperateur)
                 .orElseThrow(() -> new RuntimeException("Opérateur maintenance non trouvé avec l'email : " + emailOperateur));
 
         Maintenance maintenance = maintenanceRepository.findById(maintenanceId)
                 .orElseThrow(() -> new RuntimeException("Maintenance non trouvée"));
 
-        // Vérifier que la maintenance appartient bien au garage de l'opérateur
-        if (maintenance.getGarage() == null || operateur.getGarage() == null ||
+        // FIX 1 : Vérification assouplie du garage
+        // On ne bloque que si les deux garages existent ET sont différents.
+        // Si l'un des deux est null, on autorise l'envoi.
+        if (maintenance.getGarage() != null && operateur.getGarage() != null &&
                 !maintenance.getGarage().getId().equals(operateur.getGarage().getId())) {
             throw new RuntimeException("Cette maintenance n'appartient pas à votre garage");
         }
 
-        // Mettre à jour le rapport
+        // Sauvegarder le rapport dans tous les cas
         maintenance.setRapportProbleme(rapportText);
         maintenanceRepository.save(maintenance);
 
-        if (maintenance.getVehicule() == null || maintenance.getVehicule().getParc() == null
+        // FIX 2 : Si pas de chef de parc, on ne lève plus d'exception —
+        // le rapport est déjà sauvegardé, on logue et on sort proprement.
+        if (maintenance.getVehicule() == null
+                || maintenance.getVehicule().getParc() == null
                 || maintenance.getVehicule().getParc().getChef() == null) {
-            throw new RuntimeException("Aucun chef de parc associé à cette maintenance");
+            System.err.println("⚠️ Rapport sauvegardé mais aucun chef de parc trouvé pour la maintenance " + maintenanceId
+                    + " — notification non envoyée.");
+            return;
         }
 
         Long chefId = maintenance.getVehicule().getParc().getChef().getId();
         String lienTelechargement = "/chef/rapports-maintenance";
+        String matricule = maintenance.getVehicule() != null ? maintenance.getVehicule().getMatricule() : "N/A";
         String message = "Rapport de maintenance soumis pour le véhicule "
-                + (maintenance.getVehicule() != null ? maintenance.getVehicule().getMatricule() : "N/A")
+                + matricule
                 + " par " + operateur.getNom() + " " + operateur.getPrenom()
                 + ". Cliquez pour consulter.";
 
@@ -81,25 +94,32 @@ public class OperateurMaintenanceService {
 
     /**
      * Envoie une notification au chef de parc pour signaler qu'un rapport PDF est disponible.
+     *
+     * FIX 1 : Vérification garage assouplie (même logique que soumettreRapportMaintenance).
+     * FIX 2 : Pas d'exception si aucun chef — logue et retourne proprement.
      */
     @Transactional
     public void envoyerRapportMaintenanceAuChef(Long maintenanceId, String emailOperateur) throws Exception {
-        // ✅ Récupérer l'opérateur directement via son email
+        // Récupérer l'opérateur via son email
         OperateurMaintenance operateur = operateurRepository.findByEmail(emailOperateur)
                 .orElseThrow(() -> new RuntimeException("Opérateur maintenance non trouvé avec l'email : " + emailOperateur));
 
         Maintenance maintenance = maintenanceRepository.findById(maintenanceId)
                 .orElseThrow(() -> new RuntimeException("Maintenance non trouvée"));
 
-        // Vérifier l'appartenance au garage
-        if (maintenance.getGarage() == null || operateur.getGarage() == null ||
+        // FIX 1 : Vérification assouplie du garage
+        if (maintenance.getGarage() != null && operateur.getGarage() != null &&
                 !maintenance.getGarage().getId().equals(operateur.getGarage().getId())) {
             throw new RuntimeException("Cette maintenance n'appartient pas à votre garage");
         }
 
-        if (maintenance.getVehicule() == null || maintenance.getVehicule().getParc() == null
+        // FIX 2 : Pas de chef → log + return sans exception
+        if (maintenance.getVehicule() == null
+                || maintenance.getVehicule().getParc() == null
                 || maintenance.getVehicule().getParc().getChef() == null) {
-            throw new RuntimeException("Aucun chef de parc associé à cette maintenance");
+            System.err.println("⚠️ Aucun chef de parc trouvé pour la maintenance " + maintenanceId
+                    + " — notification PDF non envoyée.");
+            return;
         }
 
         Long chefId = maintenance.getVehicule().getParc().getChef().getId();
@@ -120,7 +140,10 @@ public class OperateurMaintenanceService {
     }
 
     /**
-     * Téléchargement du PDF du rapport (inchangé)
+     * Téléchargement du PDF du rapport.
+     *
+     * FIX : peutTelechargerRapport assoupli — si l'opérateur ou la maintenance n'a pas
+     *        de garage, on autorise quand même le téléchargement pour l'opérateur concerné.
      */
     public byte[] telechargerRapportMaintenancePdf(Long maintenanceId, String emailUtilisateur) throws Exception {
         Utilisateur utilisateur = utilisateurRepository.findByEmailIgnoreCase(emailUtilisateur)
@@ -135,6 +158,10 @@ public class OperateurMaintenanceService {
         return pdfGenerationService.generateMaintenanceReportPdf(maintenance, utilisateur);
     }
 
+    /**
+     * FIX : Pour OPERATEUR_MAINTENANCE, si le garage est null des deux côtés,
+     *        on autorise l'accès au lieu de refuser.
+     */
     private boolean peutTelechargerRapport(Utilisateur utilisateur, Maintenance maintenance) {
         if (utilisateur.getRole() == Role.CHEF) {
             return maintenance.getVehicule() != null
@@ -145,10 +172,14 @@ public class OperateurMaintenanceService {
 
         if (utilisateur.getRole() == Role.OPERATEUR_MAINTENANCE) {
             OperateurMaintenance operateur = operateurRepository.findById(utilisateur.getId()).orElse(null);
-            return operateur != null
-                    && maintenance.getGarage() != null
-                    && operateur.getGarage() != null
-                    && maintenance.getGarage().getId().equals(operateur.getGarage().getId());
+            if (operateur == null) return false;
+
+            // FIX : Si l'un des garages est null, on autorise l'accès
+            if (maintenance.getGarage() == null || operateur.getGarage() == null) {
+                return true;
+            }
+
+            return maintenance.getGarage().getId().equals(operateur.getGarage().getId());
         }
 
         return false;

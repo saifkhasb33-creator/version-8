@@ -10,48 +10,48 @@ function ChauffeurAmendeForm() {
   const { user } = useAuth();
   const { showSuccess, showError } = useNotification();
   const [loading, setLoading] = useState(false);
-  
+
   const [formData, setFormData] = useState({
     montant: '',
     motif: '',
     date: new Date().toISOString().split('T')[0],
+    lieu: '',
     description: ''
   });
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!formData.montant || !formData.motif) {
-      showError('❌ Veuillez remplir tous les champs obligatoires');
+      showError('Veuillez remplir tous les champs obligatoires');
       return;
     }
 
     setLoading(true);
-
     try {
       const amendeData = {
-        montant: parseFloat(formData.montant),
-        motif: formData.motif,
-        dateAmende: formData.date,
-        description: formData.description,
-        chauffeurId: user.id,
-        statut: 'SIGNALÉE'
+        // ✅ Noms exacts des champs du DTO backend AmendeDTO
+        montant:        parseFloat(formData.montant),
+        motif:          formData.motif,
+        dateInfraction: formData.date,             // ← était "dateAmende", doit être "dateInfraction"
+        lieuInfraction: formData.lieu || 'Non précisé', // ← champ ajouté, absent dans l'original
+        description:    formData.description,
+        chauffeurId:    user.id,
+        statut:         'SIGNALÉE'
+        // vehiculeId intentionnellement absent : géré côté backend via fallback
       };
 
       await createAmende(amendeData);
-      showSuccess('✅ Amende signalée avec succès');
+      showSuccess('Amende signalée avec succès. Le chef de parc a été notifié.');
       setTimeout(() => navigate('/chauffeur/dashboard'), 1500);
     } catch (err) {
-      console.error('❌ Erreur:', err);
-      showError('❌ Erreur: ' + (err.response?.data?.message || err.message));
+      console.error('Erreur:', err);
+      showError('Erreur: ' + (err.response?.data?.message || err.message));
     } finally {
       setLoading(false);
     }
@@ -114,6 +114,19 @@ function ChauffeurAmendeForm() {
           </div>
         </div>
 
+        {/* ✅ Champ lieu ajouté — correspond à lieuInfraction dans AmendeDTO */}
+        <div className="form-group">
+          <label htmlFor="lieu">Lieu de l'infraction</label>
+          <input
+            type="text"
+            id="lieu"
+            name="lieu"
+            value={formData.lieu}
+            onChange={handleChange}
+            placeholder="Ex: Avenue Habib Bourguiba, Tunis"
+          />
+        </div>
+
         <div className="form-group">
           <label htmlFor="description">Description (facultatif)</label>
           <textarea
@@ -127,18 +140,10 @@ function ChauffeurAmendeForm() {
         </div>
 
         <div className="form-actions">
-          <button
-            type="submit"
-            disabled={loading}
-            className="btn-primary"
-          >
-            {loading ? 'Signalement...' : 'Signaler l\'amende'}
+          <button type="submit" disabled={loading} className="btn-primary">
+            {loading ? 'Signalement...' : "Signaler l'amende"}
           </button>
-          <button
-            type="button"
-            onClick={() => navigate('/chauffeur/dashboard')}
-            className="btn-secondary"
-          >
+          <button type="button" onClick={() => navigate('/chauffeur/dashboard')} className="btn-secondary">
             Annuler
           </button>
         </div>
